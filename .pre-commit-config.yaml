@@ -1,0 +1,46 @@
+exclude: "docs|migrations|alembic|static|.git|.tox"
+repos:
+  # general checks (see here: https://pre-commit.com/hooks.html)
+  - repo: "https://github.com/pre-commit/pre-commit-hooks"
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+      - id: check-json
+        exclude: .vscode
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: check-toml
+      - id: requirements-txt-fixer
+
+  # black - formatting
+  - repo: "https://github.com/psf/black"
+    rev: 24.4.2
+    hooks:
+      - id: black
+        args: ["--config=pyproject.toml"]
+
+  # docformatter
+  - repo: "https://github.com/PyCQA/docformatter"
+    rev: v1.7.5
+    hooks:
+      - id: docformatter
+        additional_dependencies: [tomli]
+        args: ["--in-place", "--config=pyproject.toml"]
+
+  # isort - sorting imports
+  - repo: 'https://github.com/pycqa/isort'
+    rev: 5.13.2
+    hooks:
+      - id: isort
+
+  # flake8 - linting
+  - repo: "https://github.com/pycqa/flake8"
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: ["--config=.flake8"]

@@ -1,0 +1,22 @@
+channels[daphne]~=4.1.0
+channels_redis~=4.2.0
+coverage~=7.5.0  # for testing
+django~=5.0.4
+django-cors-headers~=4.3.1
+django-filter~=24.2
+django-redis~=5.4.0
+djangorestframework~=3.15.1
+djangorestframework-simplejwt~=5.3.1
+drf-spectacular~=0.27.2
+drf-spectacular-sidecar~=2024.4.1
+groq~=0.5.0
+gunicorn~=22.0.0
+hiredis~=2.3.2
+markdown~=3.6
+pillow~=10.3.0
+psycopg2-binary~=2.9.9
+pypdf~=4.2.0
+pytest-django~=4.8.0  # for testing
+redis~=5.0.4
+requests
+wait-for-it>=2.2.2

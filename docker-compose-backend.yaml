@@ -1,0 +1,99 @@
+version: "3.9" # Specify a compatible Docker Compose version
+
+services:
+  postgres:
+    image: postgres:15 # Use a specific version for production
+    restart: unless-stopped # Restart only if container exits abnormally
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persistent storage for data
+
+  redis:
+    image: redis:7 # Use a specific version for production
+    restart: unless-stopped # Restart only if container exits abnormally
+    env_file: .env
+    volumes:
+      - redis_data:/data # Persistent storage for Redis data
+
+  nginx:
+    image: nginx:1.25-alpine # Use a specific version for production
+    restart: unless-stopped # Restart only if container exits abnormally
+    env_file: .env
+    volumes:
+      - type: volume
+        source: media_data
+        target: /usr/share/nginx/html/media
+        read_only: true
+        volume:
+          nocopy: true
+      - type: volume
+        source: static_data
+        target: /usr/share/nginx/html/static
+        read_only: true
+        volume:
+          nocopy: true
+    depends_on:
+      - django
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.staticfiles.rule=PathPrefix(`/static/`) || PathPrefix(`/media/`) || PathPrefix(`/_next/static/`)"
+      - "traefik.http.routers.staticfiles.entrypoints=web"
+      - "traefik.http.routers.staticfiles.priority=1"
+
+  reverse-proxy:
+    image: traefik:v3.0
+    env_file: .env
+    restart: unless-stopped
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.le-resolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.le-resolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.le-resolver.acme.email=admin@yourdomain.com"
+      - "--certificatesresolvers.le-resolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      # - "8000:8000"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  django:
+    build: ./backend # Path to your Django project directory
+    image: crackaf/tax-chat:backend # Use a specific version for production
+    restart: unless-stopped # Restart only if container exits abnormally
+    env_file: .env
+    # command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000 # Expose Django on port 8000 within the container
+    volumes:
+      - "static_data:/var/www/static"
+      - "media_data:/var/www/media"
+    depends_on:
+      - postgres
+      - redis # Ensure Postgres and Redis are up before Django starts
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django.rule=Host(`127.0.0.1`) || Host(`localhost`) || Host(`ec2-3-112-67-3.ap-northeast-1.compute.amazonaws.com`)"
+      - "traefik.http.routers.django.entrypoints=web"
+      - "traefik.http.routers.django.priority=2"
+
+  fastapi-ocr:
+    build: ./ocr-tesseract
+    image: crackaf/ocr-tesseract:latest
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - "static_data:/var/www/static"
+      - "media_data:/var/www/media"
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_data:
+  media_data:
